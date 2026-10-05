@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Smart Faculty Queue &amp; Appointment System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fb;--card:#fff;--tx:#14213d;--mu:#667;--ac:#1d4ed8;--bd:#d8deea;--ok:#15803d;--wr:#b45309;--er:#b91c1c}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1526;--card:#16203a;--tx:#e8edf8;--mu:#9aa6c0;--ac:#6b9bff;--bd:#2a3858;--ok:#4ade80;--wr:#fbbf24;--er:#f87171}}
+:root[data-theme="dark"]{--bg:#0e1526;--card:#16203a;--tx:#e8edf8;--mu:#9aa6c0;--ac:#6b9bff;--bd:#2a3858;--ok:#4ade80;--wr:#fbbf24;--er:#f87171}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+header{background:var(--ac);color:#fff;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;flex:1}header button{background:#fff3;color:#fff;border:0}
+nav{display:flex;gap:4px;padding:8px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--bd)}
+nav button{background:none;color:var(--tx);border:0;white-space:nowrap}nav button.on{background:var(--ac);color:#fff}
+main{max-width:1000px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat b{font-size:26px;display:block}.stat span{color:var(--mu);font-size:13px}
+button{font:inherit;padding:6px 12px;border-radius:7px;border:1px solid var(--bd);background:var(--ac);color:#fff;cursor:pointer}
+button.g{background:var(--card);color:var(--tx)}button.d{background:var(--er)}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);max-width:100%}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd);font-size:14px}
+th{cursor:pointer;color:var(--mu)}
+.tag{padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.waiting,.booked{color:var(--wr)}.serving,.completed{color:var(--ok)}.cancelled,.noshow{color:var(--er)}
+.msg{padding:8px 12px;border-radius:8px;margin-bottom:10px;background:var(--card);border-left:4px solid var(--ac)}.msg.e{border-color:var(--er)}
+h2,h3{margin:.2em 0 .5em}small,.mu{color:var(--mu)}pre.mermaid{overflow-x:auto}
+</style></head><body>
+<header><h1>🎓 Smart Faculty Queue &amp; Appointment System</h1><span id="who"></span><button id="out" style="display:none">Logout</button></header>
+<nav id="nav"></nav><main id="app"></main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let S=null,me=null,tab='',msg=null,tok=localStorage.getItem('tok'),ui={q:'',dept:'',sort:'name',fac:null,hs:'',hk:'date',hd:1};
+const U=id=>S.users.find(x=>x.id==id)||{name:'?'},SL=id=>S.slots.find(x=>x.id==id);
+const wait=f=>S.tickets.filter(t=>t.fid==f&&t.status=='waiting');
+function say(m,e){msg={m,e};render()}
+async function API(p,b,m){const r=await fetch('/api'+p,{method:m||(b?'POST':'GET'),headers:{'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{})},body:b?JSON.stringify(b):undefined});
+const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(r.status==401&&tok?'Session expired. Please log in again.':(j.error||'Request failed'));return j}
+async function refresh(f){S=await API('/state');me=S.me;render(f)}
+async function act(p,b,ok,m){try{await API(p,b,m);msg=ok?{m:ok}:null;await refresh()}catch(e){msg={m:e.message,e:1};if(/Session expired/.test(e.message))return logout(true);render()}}
+async function login(){try{const r=await API('/login',{user:$('#lu').value.trim(),pw:$('#lp').value});tok=r.token;localStorage.setItem('tok',tok);tab='dash';msg=null;await refresh()}catch(e){say(e.message,1)}}
+async function register(){try{await API('/register',{name:$('#rn').value,user:$('#ru').value,pw:$('#rp').value});say('Registered. You can log in now.')}catch(e){say(e.message,1)}}
+function logout(exp){tok=null;localStorage.removeItem('tok');S=me=null;tab='';msg=exp?{m:'Session expired. Please log in again.',e:1}:null;render()}
+const book=id=>act('/appointments',{slotId:id,topic:$('#topic').value},'Appointment confirmed.');
+const join=f=>act('/queue',{facultyId:f,topic:$('#topic')?.value},'Ticket issued.');
+const cancel=(k,id)=>act(`/${k=='appts'?'appointments':'tickets'}/${id}/cancel`,{});
+const call=()=>act('/queue/call',{});
+const finish=(id,st)=>act(`/tickets/${id}/finish`,{status:st,note:$('#note')?.value||''});
+const addSlot=()=>act('/slots',{date:$('#sd').value,time:$('#st').value});
+const delSlot=id=>act('/slots/'+id,null,null,'DELETE');
+const doneAppt=id=>act(`/appointments/${id}/complete`,{note:$('#an'+id)?.value||''});
+const setOpen=v=>act('/queue/open',{open:v});
+const addUser=()=>act('/users',{name:$('#an').value,user:$('#au').value,role:$('#ar').value},'User created (password Temp123!).');
+const editUser=id=>{const u=U(id),n=prompt('Full name',u.name);if(n===null)return;const d=u.role=='faculty'?prompt('Department',u.dept||''):'';if(d===null)return;act(`/users/${id}/update`,{name:n,dept:d},'User updated.')};
+const resetPw=id=>confirm('Reset this password to Temp123! ?')&&act(`/users/${id}/reset`,{},'Password reset to Temp123!');
+const tog=id=>act(`/users/${id}/toggle`,{});
+// ---------- Views ----------
+const stat=(n,l)=>`<div class="card stat"><b>${n}</b><span>${l}</span></div>`;
+const tag=s=>`<span class="tag ${s}">${s}</span>`;
+function sortBy(rows,k,d){return rows.slice().sort((a,b)=>(a[k]>b[k]?1:a[k]<b[k]?-1:0)*d)}
+function histRows(){let r=[];
+S.appts.filter(a=>me.role=='student'?a.sid==me.id:me.role=='faculty'?a.fid==me.id:1).forEach(a=>{const s=SL(a.slot)||{};r.push({type:'Appointment',date:(s.date||'')+' '+(s.time||''),who:U(me.role=='student'?a.fid:a.sid).name,topic:a.topic,status:a.status})});
+S.tickets.filter(t=>me.role=='student'?t.sid==me.id:me.role=='faculty'?t.fid==me.id:1).forEach(t=>r.push({type:'Ticket '+t.no,date:t.at,who:U(me.role=='student'?t.fid:t.sid).name,topic:t.topic,status:t.status}));
+const q=ui.hs.toLowerCase();r=r.filter(x=>!q||(x.who+x.topic+x.status+x.type).toLowerCase().includes(q));return sortBy(r,ui.hk,ui.hd)}
+function histView(){const r=histRows();return`<div class="card"><h3>History</h3><div class="row"><input id="hs" placeholder="Search/filter…" value="${esc(ui.hs)}" oninput="ui.hs=this.value;render('hs')"></div><div class="tw"><table><tr>${['type','date','who','topic','status'].map(k=>`<th onclick="ui.hd=ui.hk=='${k}'?-ui.hd:1;ui.hk='${k}';render()">${k} ↕</th>`).join('')}</tr>${r.map(x=>`<tr><td>${esc(x.type)}</td><td>${esc(x.date)}</td><td>${esc(x.who)}</td><td>${esc(x.topic)}</td><td>${tag(x.status)}</td></tr>`).join('')||'<tr><td colspan=5 class=mu>No records</td></tr>'}</table></div></div>`}
+function studentView(){
+if(tab=='dash'){const mt=S.tickets.filter(t=>t.sid==me.id&&t.status=='waiting');
+return`<div class="grid">${stat(S.appts.filter(a=>a.sid==me.id&&a.status=='booked').length,'Upcoming appointments')}${stat(mt.length,'Active tickets')}${stat(S.logs.filter(l=>l.sid==me.id).length,'Completed consults')}</div>
+<div class="card"><h3>Live queue status</h3>${mt.map(t=>`<p><b>${t.no}</b> with ${esc(U(t.fid).name)} — position <b>${t.pos}</b>, est. wait <b>${t.pos*10} min</b> <button class="d" onclick="cancel('tickets','${t.id}')">Leave</button></p>`).join('')||'<p class=mu>No active tickets.</p>'}</div>
+<div class="card"><h3>Upcoming</h3>${S.appts.filter(a=>a.sid==me.id&&a.status=='booked').map(a=>{const s=SL(a.slot);return`<p>${s.date} ${s.time} — ${esc(U(a.fid).name)}: ${esc(a.topic)} <button class="d" onclick="cancel('appts','${a.id}')">Cancel</button></p>`}).join('')||'<p class=mu>None.</p>'}</div>`}
+if(tab=='book'){let f=S.users.filter(u=>u.role=='faculty'&&u.active);const depts=[...new Set(f.map(x=>x.dept))];
+f=f.filter(x=>(!ui.dept||x.dept==ui.dept)&&(x.name+x.dept).toLowerCase().includes(ui.q.toLowerCase()));
+f=sortBy(f.map(x=>({...x,wq:x.wq,free:S.slots.filter(s=>s.fid==x.id&&!s.taken).length})),ui.sort,ui.sort=='name'?1:-1);
+let h=`<div class="card"><div class="row"><input id="q" placeholder="Search faculty…" value="${esc(ui.q)}" oninput="ui.q=this.value;render('q')"><select onchange="ui.dept=this.value;render()"><option value="">All departments</option>${depts.map(d=>`<option ${ui.dept==d?'selected':''}>${esc(d)}</option>`).join('')}</select><select onchange="ui.sort=this.value;render()"><option value="name">Sort: name</option><option value="wq" ${ui.sort=='wq'?'selected':''}>Sort: longest queue</option><option value="free" ${ui.sort=='free'?'selected':''}>Sort: most slots</option></select></div>
+<input id="topic" placeholder="Consultation topic" style="width:100%;margin-bottom:8px"></div>`;
+h+=f.map(x=>`<div class="card"><b>${esc(x.name)}</b> <small>${esc(x.dept)}</small> ${x.open?tag('serving').replace('serving','queue open'):tag('cancelled').replace('cancelled','queue closed')}<p class="mu">${x.wq} waiting · ${x.free} free slots</p><button onclick="join('${x.id}')">Join walk-in queue</button> <button class="g" onclick="ui.fac=ui.fac=='${x.id}'?null:'${x.id}';render()">View slots</button>${ui.fac==x.id?`<div class="row" style="margin-top:8px">${S.slots.filter(s=>s.fid==x.id&&!s.taken).sort((a,b)=>(a.date+a.time>b.date+b.time)?1:-1).map(s=>`<button class="g" onclick="book('${s.id}')">${s.date} ${s.time}</button>`).join('')||'<span class=mu>No free slots</span>'}</div>`:''}</div>`).join('');return h}
+return histView()}
+function facultyView(){
+if(tab=='dash'){return`<div class="grid">${stat(wait(me.id).length,'Waiting now')}${stat(S.appts.filter(a=>a.fid==me.id&&a.status=='booked').length,'Booked appointments')}${stat(S.logs.filter(l=>l.fid==me.id).length,'Consultations done')}</div>
+<div class="card"><h3>Upcoming appointments</h3>${S.appts.filter(a=>a.fid==me.id&&a.status=='booked').map(a=>{const s=SL(a.slot);return`<div class="row">${s.date} ${s.time} — ${esc(U(a.sid).name)}: ${esc(a.topic)} <input id="an${a.id}" placeholder="Notes"><button onclick="doneAppt('${a.id}')">Complete</button><button class="d" onclick="cancel('appts','${a.id}')">Cancel</button></div>`}).join('')||'<p class=mu>None.</p>'}</div>`}
+if(tab=='queue'){const cur=S.tickets.find(t=>t.fid==me.id&&t.status=='serving'),w=wait(me.id);
+return`<div class="card"><label><input type="checkbox" ${me.open?'checked':''} onchange="setOpen(this.checked)"> Queue open</label></div>
+<div class="card"><h3>Now serving</h3>${cur?`<p><b>${cur.no}</b> ${esc(U(cur.sid).name)} — ${esc(cur.topic)}</p><div class="row"><input id="note" placeholder="Session notes" style="flex:1"><button onclick="finish('${cur.id}','completed')">Complete</button><button class="d" onclick="finish('${cur.id}','noshow')">No-show</button></div>`:`<p class=mu>Nobody.</p><button onclick="call()">Call next</button>`}</div>
+<div class="card"><h3>Waiting (${w.length})</h3>${w.map((t,i)=>`<p>${i+1}. <b>${t.no}</b> ${esc(U(t.sid).name)} — ${esc(t.topic)}</p>`).join('')||'<p class=mu>Empty.</p>'}</div>`}
+if(tab=='avail')return`<div class="card"><h3>Manage availability</h3><div class="row"><input type="date" id="sd"><input type="time" id="st"><button onclick="addSlot()">Add slot</button></div>${S.slots.filter(s=>s.fid==me.id).sort((a,b)=>(a.date+a.time>b.date+b.time)?1:-1).map(s=>`<span class="tag">${s.date} ${s.time} ${s.taken?'🔒':`<a href="#" onclick="delSlot('${s.id}');return false">✕</a>`}</span> `).join('')}</div>`;
+if(tab=='logs')return`<div class="card"><h3>Consultation logs</h3>${S.logs.filter(l=>l.fid==me.id).map(l=>`<p><b>${l.no}</b> ${l.at} — ${esc(U(l.sid).name)}: ${esc(l.topic)}<br><small>${esc(l.note)}</small></p>`).join('')||'<p class=mu>None.</p>'}</div>`;
+return histView()}
+function adminView(){
+if(tab=='dash'){const T=S.tickets,done=T.filter(t=>t.status=='completed').length;
+return`<div class="grid">${stat(S.users.length,'Users')}${stat(S.appts.length,'Appointments')}${stat(T.length,'Queue tickets')}${stat(S.logs.length,'Consultations')}${stat(T.length?Math.round(done/T.length*100)+'%':'0%','Ticket completion')}${stat(T.filter(t=>t.status=='noshow').length,'No-shows')}</div>
+<div class="card"><h3>Report: load per faculty</h3><div class="tw"><table><tr><th>Faculty</th><th>Waiting</th><th>Appointments</th><th>Consults</th></tr>${S.users.filter(u=>u.role=='faculty').map(f=>`<tr><td>${esc(f.name)}</td><td>${wait(f.id).length}</td><td>${S.appts.filter(a=>a.fid==f.id).length}</td><td>${S.logs.filter(l=>l.fid==f.id).length}</td></tr>`).join('')}</table></div></div>`}
+if(tab=='users')return`<div class="card"><h3>User management</h3><div class="row"><input id="an" placeholder="Full name"><input id="au" placeholder="username"><select id="ar"><option>student</option><option>faculty</option></select><button onclick="addUser()">Add</button></div><div class="tw"><table><tr><th>Name</th><th>User</th><th>Role</th><th>Dept</th><th>Status</th><th></th></tr>${S.users.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.user)}</td><td>${u.role}</td><td>${esc(u.dept||'')}</td><td>${u.active?'active':'disabled'}</td><td><button class="g" onclick="editUser('${u.id}')">Edit</button> <button class="g" onclick="resetPw('${u.id}')">Reset PW</button> <button class="g" onclick="tog('${u.id}')">Toggle</button></td></tr>`).join('')}</table></div></div>`;
+if(tab=='audit')return`<div class="card"><h3>Audit logs</h3><div class="tw"><table>${S.audit.slice(0,80).map(a=>`<tr><td>${a.at}</td><td>${esc(a.who)}</td><td>${esc(a.act)}</td></tr>`).join('')}</table></div></div>`;
+return histView()}
+const NAV={student:[['dash','Dashboard'],['book','Book / Queue'],['hist','History']],faculty:[['dash','Dashboard'],['queue','Live Queue'],['avail','Availability'],['logs','Consult Logs'],['hist','History']],admin:[['dash','Reports'],['users','Users'],['audit','Audit Logs'],['hist','All Activity']]};
+function render(focus){let h=msg?`<div class="msg ${msg.e?'e':''}">${esc(msg.m)}</div>`:'';
+$('#who').textContent=me?`${me.name} (${me.role})`:'';$('#out').style.display=me?'':'none';
+$('#nav').innerHTML=(me?NAV[me.role].map(([k,l])=>`<button class="${tab==k?'on':'g'}" onclick="tab='${k}';msg=null;render()">${l}</button>`).join(''):'')+'<a href="/docs.html" target="_blank" style="padding:6px 12px">Docs &amp; Diagrams ↗</a>';
+if(!me)h+=`<div class="card" style="max-width:380px;margin:auto"><h3>Login</h3><div class="row"><input id="lu" placeholder="username"><input id="lp" type="password" placeholder="password" onkeydown="if(event.key=='Enter')login()"><button onclick="login()">Login</button></div><small>Demo: student1 / Student123! · faculty1 / Faculty123! · admin / Admin123!</small></div>
+<div class="card" style="max-width:380px;margin:auto"><h3>Student registration</h3><div class="row"><input id="rn" placeholder="Full name"><input id="ru" placeholder="username"><input id="rp" type="password" placeholder="password (6+)"><button class="g" onclick="register()">Register</button></div></div>`;
+else h+=({student:studentView,faculty:facultyView,admin:adminView})[me.role]();
+$('#app').innerHTML=h;
+if(focus){const e=document.getElementById(focus);if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}}}
+$('#out').onclick=()=>logout();
+// Live queue: refresh every 10 s on the views that show position/wait, unless the user is typing.
+const typing=()=>[...document.querySelectorAll('#app input,#app textarea')].some(e=>e.type!='checkbox'&&(e.value||e===document.activeElement));
+setInterval(async()=>{if(!me||!tok||document.hidden||typing())return;if(!((me.role=='student'&&tab=='dash')||(me.role=='faculty'&&tab=='queue')))return;try{S=await API('/state');me=S.me;render()}catch(e){}},10000);
+(tok?refresh().catch(()=>logout(true)):Promise.resolve().then(()=>render()));
+</script></body></html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Docs &amp; Diagrams</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fb;--card:#fff;--tx:#14213d;--mu:#667;--ac:#1d4ed8;--bd:#d8deea;--ok:#15803d;--wr:#b45309;--er:#b91c1c}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1526;--card:#16203a;--tx:#e8edf8;--mu:#9aa6c0;--ac:#6b9bff;--bd:#2a3858;--ok:#4ade80;--wr:#fbbf24;--er:#f87171}}
+:root[data-theme="dark"]{--bg:#0e1526;--card:#16203a;--tx:#e8edf8;--mu:#9aa6c0;--ac:#6b9bff;--bd:#2a3858;--ok:#4ade80;--wr:#fbbf24;--er:#f87171}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+header{background:var(--ac);color:#fff;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;flex:1}header button{background:#fff3;color:#fff;border:0}
+nav{display:flex;gap:4px;padding:8px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--bd)}
+nav button{background:none;color:var(--tx);border:0;white-space:nowrap}nav button.on{background:var(--ac);color:#fff}
+main{max-width:1000px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat b{font-size:26px;display:block}.stat span{color:var(--mu);font-size:13px}
+button{font:inherit;padding:6px 12px;border-radius:7px;border:1px solid var(--bd);background:var(--ac);color:#fff;cursor:pointer}
+button.g{background:var(--card);color:var(--tx)}button.d{background:var(--er)}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);max-width:100%}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd);font-size:14px}
+th{cursor:pointer;color:var(--mu)}
+.tag{padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.waiting,.booked{color:var(--wr)}.serving,.completed{color:var(--ok)}.cancelled,.noshow{color:var(--er)}
+.msg{padding:8px 12px;border-radius:8px;margin-bottom:10px;background:var(--card);border-left:4px solid var(--ac)}.msg.e{border-color:var(--er)}
+h2,h3{margin:.2em 0 .5em}small,.mu{color:var(--mu)}pre.mermaid{overflow-x:auto}
+</style></head><body><header><h1>📘 Documentation &amp; Diagrams</h1><a href="/" style="color:#fff">← Back to app</a></header><main><div class="card"><h2>System Analysis</h2><h3>System Title</h3><p>Smart Faculty Queue &amp; Appointment System</p>
+<h3>Problem Statement</h3><p>Faculty consultations at the school are handled by walk-in lines and ad-hoc messages: students wait without knowing their position, faculty double-book themselves, and no record of consultations is kept.</p>
+<h3>Objectives</h3><ol><li>Give faculty one online place to publish consultation availability.</li><li>Let students book appointments and join walk-in queues without schedule conflicts.</li><li>Show students their live queue position and estimated waiting time.</li><li>Give faculty tools to run consultation sessions and record notes.</li><li>Keep a complete history and audit trail, with reports and user management for administrators.</li></ol>
+<h3>Users / Actors</h3><ul><li><b>Student</b> – searches faculty, books appointments, joins queues, views history.</li><li><b>Faculty</b> – manages availability and queue, serves students, records consultation notes.</li><li><b>Administrator</b> – manages user accounts, views reports and audit logs.</li></ul>
+<h3>Scope</h3><p>A web application with three roles and six modules: Authentication, Availability, Booking and Queue, Session Workflow, Analytics and History, User Management and Audit. Out of scope: email/SMS notifications, payments, mobile app.</p>
+<h3>Functional requirements</h3><ol><li>FR1 Users register/log in with role-based access.</li><li>FR2 Faculty create/remove availability slots.</li><li>FR3 Students search, filter and sort faculty.</li><li>FR4 Students book an appointment in a free slot.</li><li>FR5 Students join a faculty's walk-in queue and receive a ticket number.</li><li>FR6 Students see live position and estimated wait.</li><li>FR7 Faculty open/close queue, call next, complete or mark no-show.</li><li>FR8 Faculty record consultation notes (logs).</li><li>FR9 Students/faculty cancel appointments or leave queue.</li><li>FR10 Admin manages users (create, edit, deactivate, reset password).</li><li>FR11 Dashboards and reports per role; sortable history.</li><li>FR12 Admin audit log of key actions.</li></ol>
+<h3>Business rules</h3><ol><li>BR1 A slot can be booked by only one student.</li><li>BR2 A student cannot hold two appointments at the same date/time.</li><li>BR3 A student may have at most 3 active appointments.</li><li>BR4 A student may hold only one active ticket per faculty; queue must be open.</li><li>BR5 Only one student is served at a time per faculty; slots with booking history cannot be deleted.</li><li>BR6 Slots cannot be added or booked for past dates.</li></ol>
+<h3>Advanced feature</h3><p>Live queue position and estimated wait time (10 min × position, refreshed automatically every 10 s), plus open/close queue control.</p>
+<h3>Test accounts</h3><div class="tw"><table><tr><th>Role</th><th>Username</th><th>Password</th></tr><tr><td>Admin</td><td>admin</td><td>Admin123!</td></tr><tr><td>Faculty</td><td>faculty1 / faculty2 / faculty3</td><td>Faculty123!</td></tr><tr><td>Student</td><td>student1 / student2</td><td>Student123!</td></tr></table></div>
+<h3>Test cases (run on the production URL, then record Actual and Result)</h3><div class="tw"><table><tr><th>Test</th><th>Function</th><th>Expected</th><th>Actual</th><th>Result</th></tr><tr><td>TC01</td><td>Valid login (student1)</td><td>Student dashboard shown</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC02</td><td>Invalid login (wrong password)</td><td>Error "Invalid credentials.", no access</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC03</td><td>Student registration (record creation)</td><td>"Registered" message; new user can log in</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC04</td><td>Book a free slot (record creation, BR1)</td><td>Appointment confirmed; slot disappears from list</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC05</td><td>Book same date/time twice (BR2)</td><td>Rejected with BR2 message</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC06</td><td>Book a 4th active appointment (BR3)</td><td>Rejected with BR3 message</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC07</td><td>Join a faculty walk-in queue</td><td>Ticket issued; position and est. wait shown</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC08</td><td>Join same faculty queue twice (BR4)</td><td>Rejected with BR4 message</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC09</td><td>Join a closed queue (faculty3)</td><td>Rejected: queue is closed</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC10</td><td>Faculty toggles queue open/closed (record update)</td><td>Status saved; students see queue open/closed</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC11</td><td>Faculty calls next, completes with notes (status processing)</td><td>Ticket waiting → serving → completed; log saved</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC12</td><td>Search faculty by name and filter by department</td><td>List filtered correctly</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC13</td><td>Add a slot in the past / book past slot (validation, BR6)</td><td>Rejected with BR6 message</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC14</td><td>Delete a booked slot (BR5)</td><td>Rejected with BR5 message</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC15</td><td>Admin deactivates a user; user logs in</td><td>Login blocked: account deactivated</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC16</td><td>Production persistence: book a slot, redeploy/restart service, log in again</td><td>Record still present after restart</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr><tr><td>TC17</td><td>Admin edits a user's name/department (record update)</td><td>Change saved and visible in the Users table</td><td class="mu">(record)</td><td class="mu">PASS / FAIL</td></tr></table></div>
+<h3>AI / Tools list</h3><p>Claude (Anthropic) for system design and code generation; Node.js, Express, SQLite / PostgreSQL, bcryptjs, JSON Web Tokens; HTML/CSS/JavaScript; Mermaid (diagrams); VS Code; Git/GitHub; Render (hosting).</p></div>
+<div class="card"><h2>Diagrams</h2><h3>Context DFD</h3><pre class="mermaid">flowchart LR
+ST[Student]-->|Registration Details|SYS((0 Manage Faculty Queue and Appointments))
+ST-->|Booking Request|SYS
+ST-->|Queue Request|SYS
+SYS-->|Booking Confirmation|ST
+SYS-->|Queue Ticket|ST
+SYS-->|Consultation History|ST
+FA[Faculty]-->|Availability Slots|SYS
+FA-->|Queue Controls|SYS
+FA-->|Consultation Notes|SYS
+SYS-->|Live Queue|FA
+SYS-->|Appointment List|FA
+SYS-->|Consultation Statistics|FA
+AD[Administrator]-->|User Account Details|SYS
+SYS-->|Activity Reports|AD
+SYS-->|Audit Logs|AD
+ST-->|Login Credentials|SYS
+SYS-->|Session Token|ST
+FA-->|Login Credentials|SYS
+SYS-->|Session Token|FA
+SYS-->|Availability Confirmation|FA
+AD-->|Login Credentials|SYS
+SYS-->|Session Token|AD</pre><h3>Level 0 DFD</h3><pre class="mermaid">flowchart LR
+ST[Student]-->|Login Credentials|P1((1.0 Authenticate User))
+FA[Faculty]-->|Login Credentials|P1
+AD[Administrator]-->|Login Credentials|P1
+ST-->|Registration Details|P1
+D1[(D1 Users)]-->|User Record|P1
+P1-->|New User Record|D1
+P1-->|Session Token|ST
+P1-->|Session Token|FA
+P1-->|Session Token|AD
+P1-->|Audit Entry|D6[(D6 Audit Logs)]
+FA-->|Availability Slots|P2((2.0 Manage Availability))
+P2-->|Slot Record|D2[(D2 Faculty Profiles and Schedules)]
+P2-->|Availability Confirmation|FA
+ST-->|Booking Request|P3((3.0 Process Booking and Queue))
+ST-->|Queue Request|P3
+D2-->|Slot Availability|P3
+D2-->|Queue Status|P3
+D3[(D3 Appointments)]-->|Existing Appointments|P3
+D4[(D4 Queue Tickets)]-->|Active Tickets|P3
+P3-->|Appointment Record|D3
+P3-->|Ticket Record|D4
+P3-->|Booking Confirmation|ST
+P3-->|Queue Ticket|ST
+P3-->|Audit Entry|D6
+FA-->|Queue Controls|P4((4.0 Manage Consultation Session))
+FA-->|Consultation Notes|P4
+D4-->|Waiting Tickets|P4
+D3-->|Booked Appointments|P4
+P4-->|Ticket Status|D4
+P4-->|Appointment Status|D3
+P4-->|Consultation Log|D5[(D5 Consultation Logs)]
+P4-->|Live Queue|FA
+P4-->|Appointment List|FA
+P4-->|Audit Entry|D6
+D3-->|Appointment Records|P5((5.0 Generate Reports and History))
+D4-->|Ticket Records|P5
+D5-->|Consultation Records|P5
+D6-->|Audit Records|P5
+P5-->|Consultation History|ST
+P5-->|Consultation Statistics|FA
+P5-->|Activity Reports|AD
+P5-->|Audit Logs|AD
+AD-->|User Account Details|P6((6.0 Manage Users))
+P6-->|User Record|D1
+P6-->|Audit Entry|D6</pre><h3>Level 1 DFD — Process 3.0 Process Booking and Queue</h3><pre class="mermaid">flowchart LR
+ST[Student]-->|Booking Request|P31((3.1 Validate Slot Availability))
+D2[(D2 Faculty Profiles and Schedules)]-->|Slot Availability|P31
+P31-->|Valid Slot|P32((3.2 Check Booking Rules))
+D3[(D3 Appointments)]-->|Existing Appointments|P32
+P32-->|Approved Booking|P33((3.3 Create Appointment))
+P33-->|Appointment Record|D3
+P33-->|Booking Confirmation|ST
+ST-->|Queue Request|P34((3.4 Validate Queue Status))
+D2-->|Queue Status|P34
+P34-->|Open Queue Confirmation|P35((3.5 Check Ticket Rules))
+D4[(D4 Queue Tickets)]-->|Active Tickets|P35
+P35-->|Approved Queue Request|P36((3.6 Issue Queue Ticket))
+P36-->|Ticket Record|D4
+P36-->|Queue Ticket|ST
+P33-->|Audit Entry|D6[(D6 Audit Logs)]
+P36-->|Audit Entry|D6</pre><p class="mu">Balancing: the Context diagram shows the same external flows as Level 0; Level 1 has exactly the inputs and outputs of Process 3.0 in Level 0 (Booking Request, Queue Request, Slot Availability, Queue Status, Existing Appointments, Active Tickets in; Appointment Record, Ticket Record, Booking Confirmation, Queue Ticket, Audit Entry out).</p><h3>Crow's Foot ERD (matches the deployed PostgreSQL schema)</h3><pre class="mermaid">erDiagram
+USERS ||--o| FACULTY_PROFILES : has_profile
+USERS ||--o{ FACULTY_SCHEDULES : offers
+FACULTY_SCHEDULES ||--o{ APPOINTMENTS : reserved_by
+USERS ||--o{ APPOINTMENTS : books_as_student
+USERS ||--o{ APPOINTMENTS : receives_as_faculty
+USERS ||--o{ QUEUE_TICKETS : holds_as_student
+USERS ||--o{ QUEUE_TICKETS : serves_as_faculty
+USERS ||--o{ CONSULTATION_LOGS : attends_as_student
+USERS ||--o{ CONSULTATION_LOGS : records_as_faculty
+APPOINTMENTS |o--o| CONSULTATION_LOGS : produces
+QUEUE_TICKETS |o--o| CONSULTATION_LOGS : produces
+USERS {
+text id PK
+text full_name
+text username UK
+text password_hash
+text role
+int active
+text created_at
+}
+FACULTY_PROFILES {
+text user_id PK, FK
+text department
+int queue_open
+}
+FACULTY_SCHEDULES {
+text id PK
+text faculty_id FK
+text slot_date
+text slot_time
+}
+APPOINTMENTS {
+text id PK
+text student_id FK
+text faculty_id FK
+text slot_id FK
+text topic
+text status
+text created_at
+}
+QUEUE_TICKETS {
+text id PK
+text ticket_no UK
+text student_id FK
+text faculty_id FK
+text topic
+text status
+text created_at
+}
+CONSULTATION_LOGS {
+text id PK
+text appt_id FK
+text ticket_id FK
+text faculty_id FK
+text student_id FK
+text ref_no
+text topic
+text notes
+text logged_at
+}
+AUDIT_LOGS {
+text id PK
+text username
+text action
+text created_at
+}</pre><p><b>Associative entities:</b> students and faculty are both rows of USERS, so the many-to-many "student consults faculty" is resolved by two associative entities: APPOINTMENTS (scheduled, linked to a FACULTY_SCHEDULES slot) and QUEUE_TICKETS (walk-in). Each carries two foreign keys to USERS (student_id, faculty_id). A slot may have many appointment rows over time (cancelled, then rebooked) but only one booked/completed row at once (partial unique index). AUDIT_LOGS keeps the acting username as text and has no foreign key.</p><p><b>Database transactions:</b> book appointment, join queue, call next, finish ticket (status + log) and complete appointment each run inside one BEGIN/COMMIT/ROLLBACK transaction. Unique indexes also enforce BR1, BR4, one serving ticket per faculty, and unique ticket numbers.</p></div><div class="card"><h2>Database evidence</h2><p>Screenshot (psql, DBeaver or the Render/Neon console): table list, primary and foreign keys, relationships, and 10+ production rows.</p><pre>\dt
+\d appointments
+SELECT conrelid::regclass AS tbl, conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE contype IN ('p','f') AND connamespace = 'public'::regnamespace ORDER BY 1;</pre></div><div class="card"><h2>Deployment information</h2><div class="tw"><table><tr><th>Item</th><th>Value</th></tr><tr><td>Production URL</td><td>https://YOUR-APP.onrender.com</td></tr><tr><td>Technology stack</td><td>Node.js 18+, Express 4, bcryptjs, jsonwebtoken, pg, vanilla HTML/CSS/JS, Mermaid</td></tr><tr><td>Frontend hosting</td><td>Render Web Service (static files in public/ served by Express)</td></tr><tr><td>Backend hosting</td><td>Render Web Service (Node.js)</td></tr><tr><td>Database service</td><td>Render PostgreSQL</td></tr><tr><td>Repository</td><td>https://github.com/YOU/REPO</td></tr><tr><td>Test accounts</td><td>See the Test accounts table above</td></tr></table></div><p class="mu">Secrets (DATABASE_URL, JWT_SECRET) are set only in the hosting dashboard and are not part of this submission.</p></div></main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:matchMedia('(prefers-color-scheme:dark)').matches?'dark':'default'})</script></body></html>
